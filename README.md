@@ -58,18 +58,15 @@ node ./dist/server.js
 ## Add to Claude Code (MCP)
 
 **IMPORTANT:** Claude Code requires absolute paths. Use `$PWD` to get the current directory path.
-**Option A — pass env at add-time:**
+
+**Option A — use .env.local file (recommended):**
 ```bash
-claude mcp add todoist   --scope user   --env TODOIST_API_TOKEN=YOUR_PAT   --env TODOIST_PROJECT_ID=123456789   --env LOG_LEVEL=debug   --env LOG_FILE=$PWD/todoist-mcp.log   -- node $PWD/dist/server.js
+claude mcp add todoist --scope user --env-file $PWD/.env.local -- node $PWD/dist/server.js
 ```
 
-**Option B — rely on shell env:**
+**Option B — pass env at add-time:**
 ```bash
-export TODOIST_API_TOKEN=YOUR_PAT
-export TODOIST_PROJECT_ID=123456789
-export LOG_LEVEL=debug
-export LOG_FILE=$PWD/todoist-mcp.log
-claude mcp add todoist --scope user -- node $PWD/dist/server.js
+claude mcp add todoist --scope user --env TODOIST_API_TOKEN=YOUR_PAT --env TODOIST_PROJECT_ID=123456789 --env LOG_LEVEL=debug --env LOG_FILE=$PWD/todoist-mcp.log -- node $PWD/dist/server.js
 ```
 
 Manage servers:
