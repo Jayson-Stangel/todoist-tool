@@ -28,7 +28,7 @@ Every parent task must live in **exactly one** of the above. Subtasks always inh
 ---
 
 ## Environment
-Create a `.env` (or export env vars) with:
+Copy `.env.example` to `.env.local` and fill in your values:
 
 ```bash
 TODOIST_API_TOKEN=your_todoist_pat_here
@@ -56,9 +56,11 @@ node ./dist/server.js
 ---
 
 ## Add to Claude Code (MCP)
+
+**IMPORTANT:** Claude Code requires absolute paths. Use `$PWD` to get the current directory path.
 **Option A — pass env at add-time:**
 ```bash
-claude mcp add todoist   --scope user   --env TODOIST_API_TOKEN=YOUR_PAT   --env TODOIST_PROJECT_ID=123456789   --env LOG_LEVEL=debug   --env LOG_FILE=/absolute/path/todoist-mcp.log   -- node ./dist/server.js
+claude mcp add todoist   --scope user   --env TODOIST_API_TOKEN=YOUR_PAT   --env TODOIST_PROJECT_ID=123456789   --env LOG_LEVEL=debug   --env LOG_FILE=$PWD/todoist-mcp.log   -- node $PWD/dist/server.js
 ```
 
 **Option B — rely on shell env:**
@@ -67,7 +69,7 @@ export TODOIST_API_TOKEN=YOUR_PAT
 export TODOIST_PROJECT_ID=123456789
 export LOG_LEVEL=debug
 export LOG_FILE=$PWD/todoist-mcp.log
-claude mcp add todoist --scope user node ./dist/server.js
+claude mcp add todoist --scope user -- node $PWD/dist/server.js
 ```
 
 Manage servers:
