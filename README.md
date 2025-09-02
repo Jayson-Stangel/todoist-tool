@@ -1,4 +1,4 @@
-# Todoist MCP Tool (Local, Single-Project)
+# Todoist MCP Tool (Local, Single Todoist Project)
 
 This MCP server exposes Todoist operations to Claude Code for **your personal use** (PAT + single project).
 
