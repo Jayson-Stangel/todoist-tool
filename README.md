@@ -61,12 +61,14 @@ node ./dist/server.js
 
 **Option A — use .env.local file (recommended):**
 ```bash
-claude mcp add todoist --scope user --env-file $PWD/.env.local -- node $PWD/dist/server.js
+# Replace /path/to/your/todoist-tool with the actual path
+claude mcp add todoist --scope user -- node -r /path/to/your/todoist-tool/node_modules/dotenv/config /path/to/your/todoist-tool/dist/server.js dotenv_config_path=/path/to/your/todoist-tool/.env.local
 ```
 
 **Option B — pass env at add-time:**
 ```bash
-claude mcp add todoist --scope user --env TODOIST_API_TOKEN=YOUR_PAT --env TODOIST_PROJECT_ID=123456789 --env LOG_LEVEL=debug --env LOG_FILE=$PWD/todoist-mcp.log -- node $PWD/dist/server.js
+# Replace /path/to/your/todoist-tool with the actual path  
+claude mcp add todoist --scope user --env TODOIST_API_TOKEN=YOUR_PAT --env TODOIST_PROJECT_ID=123456789 --env LOG_LEVEL=debug --env LOG_FILE=/path/to/your/todoist-tool/todoist-mcp.log -- node /path/to/your/todoist-tool/dist/server.js
 ```
 
 Manage servers:
