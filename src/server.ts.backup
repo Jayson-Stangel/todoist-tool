@@ -1,0 +1,84 @@
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+import { todoist_tool } from "./index.js";
+import { log } from "./logger.js";
+
+const server = new McpServer({ name: "todoist-mcp", version: "0.1.0" });
+
+server.registerTool(
+  "create_task",
+  {
+    title: "Create a task or subtask",
+    description: "Create a task in one of the canonical sections, or a subtask under a parent.",
+    inputSchema: z.object({
+      title: z.string(),
+      description: z.string(),
+      section: z.enum([
+        "Backlog","Deferred","Current Sprint Backlog","Blocked",
+        "In Progress","Ready for Testing","Complete"
+      ]).optional(),
+      due_natural: z.string().optional(),
+      parent_task_id: z.string().optional()
+    })
+  },
+  async (args) => {
+    log.info("mcp_call create_task");
+    const res = await todoist_tool({ action: "create_task", args } as any);
+    return { content: [{ type: "json", json: res }] };
+  }
+);
+
+server.registerTool(
+  "edit_task",
+  {
+    title: "Edit/Move a task",
+    description: "Edit title/description/due; optionally move a PARENT task between sections.",
+    inputSchema: z.object({
+      task_id: z.string(),
+      title: z.string().optional(),
+      description: z.string().optional(),
+      due_natural: z.string().optional(),
+      section: z.enum([
+        "Backlog","Deferred","Current Sprint Backlog","Blocked",
+        "In Progress","Ready for Testing","Complete"
+      ]).optional()
+    })
+  },
+  async (args) => {
+    log.info("mcp_call edit_task");
+    const res = await todoist_tool({ action: "edit_task", args } as any);
+    return { content: [{ type: "json", json: res }] };
+  }
+);
+
+server.registerTool(
+  "list_tasks_by_section",
+  {
+    title: "List active tasks (3 default sections)",
+    description: "Returns Current Sprint Backlog, In Progress, Ready for Testing.",
+    inputSchema: z.object({})
+  },
+  async (args) => {
+    log.info("mcp_call list_tasks_by_section");
+    const res = await todoist_tool({ action: "list_tasks_by_section", args } as any);
+    return { content: [{ type: "json", json: res }] };
+  }
+);
+
+server.registerTool(
+  "get_task_details",
+  {
+    title: "Get task details",
+    description: "Title, description, and subtasks (titles only).",
+    inputSchema: z.object({ task_id: z.string() })
+  },
+  async (args) => {
+    log.info("mcp_call get_task_details");
+    const res = await todoist_tool({ action: "get_task_details", args } as any);
+    return { content: [{ type: "json", json: res }] };
+  }
+);
+
+const transport = new StdioServerTransport();
+server.connect(transport);
