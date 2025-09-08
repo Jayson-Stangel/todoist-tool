@@ -2,17 +2,23 @@ import { z } from "zod";
 import {
   CreateTaskInput, TaskOut,
   EditTaskInput,
+  MoveTaskInput,
   ListTasksBySectionInput, ListTasksBySectionOut,
-  GetTaskDetailsInput, TaskDetailsOut
+  GetTaskDetailsInput, TaskDetailsOut,
+  SearchTasksInput, SearchTasksOut,
+  DeleteTaskInput, DeleteTaskOut
 } from "./schemas.js";
-import { createTask, editTask, listTasksDefaultThree, getTaskDetails } from "./tasks.js";
+import { createTask, editTask, moveTask, listTasksDefaultThree, getTaskDetails, searchTasks, deleteTask } from "./tasks.js";
 import { MissingEnvError, ValidationError, NotFoundError, TodoistApiError, log } from "./logger.js";
 
 export type ToolInput =
   | { action: "create_task"; args: z.infer<typeof CreateTaskInput> }
   | { action: "edit_task"; args: z.infer<typeof EditTaskInput> }
+  | { action: "move_task"; args: z.infer<typeof MoveTaskInput> }
   | { action: "list_tasks_by_section"; args: z.infer<typeof ListTasksBySectionInput> }
-  | { action: "get_task_details"; args: z.infer<typeof GetTaskDetailsInput> };
+  | { action: "get_task_details"; args: z.infer<typeof GetTaskDetailsInput> }
+  | { action: "search_tasks"; args: z.infer<typeof SearchTasksInput> }
+  | { action: "delete_task"; args: z.infer<typeof DeleteTaskInput> };
 
 export async function todoist_tool(input: ToolInput) {
   try {
@@ -27,6 +33,11 @@ export async function todoist_tool(input: ToolInput) {
         const out = await editTask(parsed);
         return { ok: true, action: input.action, data: TaskOut.parse(out) };
       }
+      case "move_task": {
+        const parsed = MoveTaskInput.parse(input.args);
+        const out = await moveTask(parsed);
+        return { ok: true, action: input.action, data: TaskOut.parse(out) };
+      }
       case "list_tasks_by_section": {
         ListTasksBySectionInput.parse(input.args ?? {});
         const out = await listTasksDefaultThree();
@@ -36,6 +47,16 @@ export async function todoist_tool(input: ToolInput) {
         const parsed = GetTaskDetailsInput.parse(input.args);
         const out = await getTaskDetails(parsed.task_id);
         return { ok: true, action: input.action, data: TaskDetailsOut.parse(out) };
+      }
+      case "search_tasks": {
+        const parsed = SearchTasksInput.parse(input.args);
+        const out = await searchTasks(parsed.query, { exact_title: parsed.exact_title });
+        return { ok: true, action: input.action, data: SearchTasksOut.parse(out) };
+      }
+      case "delete_task": {
+        const parsed = DeleteTaskInput.parse(input.args);
+        const out = await deleteTask(parsed.task_id);
+        return { ok: true, action: input.action, data: DeleteTaskOut.parse(out) };
       }
       default: {
         const a = (input as any).action;

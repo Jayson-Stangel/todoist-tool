@@ -1,4 +1,4 @@
-import { todoist, getConfig } from "./client.js";
+import { todoist, getConfig, todoistSync } from "./client.js";
 import { NotFoundError, ValidationError, log } from "./logger.js";
 import { getSectionIdByName, ensureCanonicalSections } from "./sections.js";
 import { dateFlags } from "./utils.js";
@@ -79,7 +79,6 @@ export async function editTask(args: {
   title?: string;
   description?: string;
   due_natural?: string;
-  section?: SectionName;
 }) {
   const t = await getTask(args.task_id);
 
@@ -88,14 +87,40 @@ export async function editTask(args: {
   if (args.description !== undefined) patch.description = args.description;
   if (args.due_natural !== undefined) patch.due_string = args.due_natural;
 
-  if (args.section) {
-    if (t.parent_id) throw new ValidationError("Subtasks inherit parent section and cannot be moved directly.");
-    const section_id = await getSectionIdByName(args.section);
-    patch.section_id = section_id;
-  }
-
   const updated = await todoist(`/tasks/${t.id}`, { method: "POST", body: JSON.stringify(patch) }) as Task;
-  log.info(`edit_task id=${updated.id} moved_section=${args.section ? "yes" : "no"}`);
+  log.info(`edit_task id=${updated.id}`);
+
+  return {
+    task_id: updated.id,
+    parent_task_id: updated.parent_id,
+    title: updated.content,
+    description: updated.description ?? "",
+    section: await sectionNameFromId(updated.section_id),
+    due: dateFlags(updated.due?.date ?? undefined),
+    url: updated.url
+  };
+}
+
+export async function moveTask(args: {
+  task_id: string;
+  section: SectionName;
+}) {
+  const t = await getTask(args.task_id);
+
+  if (t.parent_id) throw new ValidationError("Subtasks inherit parent section and cannot be moved directly.");
+  
+  const section_id = await getSectionIdByName(args.section);
+  
+  // Use Sync API for section moves since REST API doesn't support it properly
+  await todoistSync([{
+    type: "item_move",
+    uuid: crypto.randomUUID(),
+    args: { id: t.id, section_id }
+  }]);
+
+  // Fetch the updated task to return current state
+  const updated = await getTask(t.id);
+  log.info(`move_task id=${updated.id} section=${args.section}`);
 
   return {
     task_id: updated.id,
@@ -159,6 +184,68 @@ export async function getTaskDetails(task_id: string) {
 
 async function sectionNameFromId(id?: string): Promise<SectionName> {
   const map = await ensureCanonicalSections();
-  for (const [name, sid] of map.entries()) if (sid === id) return name as SectionName;
+  const canonical: SectionName[] = [
+    "Backlog",
+    "Deferred",
+    "Current Sprint Backlog",
+    "Blocked",
+    "In Progress",
+    "Ready for Testing",
+    "Complete"
+  ];
+  for (const name of canonical) {
+    const sid = map.get(name);
+    if (sid === id) return name;
+  }
   return "Backlog";
+}
+
+export async function searchTasks(query: string, opts?: { exact_title?: boolean }) {
+  const { projectId } = getConfig();
+  let tasks: Task[];
+  if (opts?.exact_title) {
+    const all = await todoist(`/tasks?project_id=${projectId}`) as Task[];
+    const q = query.trim().toLowerCase();
+    tasks = all.filter(t => (t.content ?? "").trim().toLowerCase() === q);
+  } else {
+    // Use Todoist filter syntax without quotes to broaden matching
+    const filter = encodeURIComponent(`search: ${query}`);
+    tasks = await todoist(`/tasks?project_id=${projectId}&filter=${filter}`) as Task[];
+  }
+
+  const results = [] as Array<{
+    task_id: string;
+    title: string;
+    url: string;
+    section: SectionName;
+    due: ReturnType<typeof dateFlags>;
+  }>;
+
+  for (const t of tasks) {
+    results.push({
+      task_id: t.id,
+      title: t.content,
+      url: t.url,
+      section: await sectionNameFromId(t.section_id),
+      due: dateFlags(t.due?.date ?? undefined)
+    });
+  }
+
+  log.info(`search_tasks query="${query}" exact_title=${!!opts?.exact_title} results=${results.length}`);
+
+  return { project_id: projectId, query, results };
+}
+
+export async function deleteTask(task_id: string) {
+  const t = await getTask(task_id);
+  
+  await todoist(`/tasks/${task_id}`, { method: "DELETE" });
+  
+  log.info(`delete_task id=${task_id} parent=${t.parent_id ?? "none"}`);
+  
+  return {
+    success: true,
+    task_id: task_id,
+    message: `Task "${t.content}" deleted successfully`
+  };
 }

@@ -45,3 +45,30 @@ export async function todoist(path: string, init?: RequestInit) {
   log.debug(`HTTP ${method} ${url} -> ${status} ok`);
   return json;
 }
+
+export async function todoistSync(commands: Array<{type: string, uuid: string, args: any}>) {
+  const { token } = getConfig();
+  const url = "https://api.todoist.com/sync/v9/sync";
+  const body = JSON.stringify({ commands });
+  log.debug(`HTTP POST ${url} bodyBytes=${body.length} commands=${commands.length}`);
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body
+  });
+  
+  if (!res.ok) {
+    let errorBody: any = null;
+    try { errorBody = await res.json(); } catch { try { errorBody = await res.text(); } catch { errorBody = "<unreadable>"; } }
+    log.error(`HTTP POST ${url} -> ${res.status} ${JSON.stringify(errorBody).slice(0,500)}`);
+    throw new TodoistApiError(res.status, errorBody);
+  }
+  
+  const json = await res.json();
+  log.debug(`HTTP POST ${url} -> ${res.status} ok`);
+  return json;
+}

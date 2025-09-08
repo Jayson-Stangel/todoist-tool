@@ -4,7 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { todoist_tool } from "./index.js";
 import { log } from "./logger.js";
-import { CreateTaskInput, EditTaskInput, ListTasksBySectionInput, GetTaskDetailsInput } from "./schemas.js";
+import { CreateTaskInput, EditTaskInput, ListTasksBySectionInput, GetTaskDetailsInput, SearchTasksInput } from "./schemas.js";
 
 const server = new McpServer({ name: "todoist-mcp", version: "0.1.0" });
 
@@ -60,6 +60,20 @@ server.registerTool(
   async (args, extra) => {
     log.info("mcp_call get_task_details");
     const res = await todoist_tool({ action: "get_task_details", args } as any);
+    return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+  }
+);
+
+server.registerTool(
+  "search_tasks",
+  {
+    title: "Search tasks by text",
+    description: "Search active tasks in the configured project by text.",
+    inputSchema: SearchTasksInput.shape
+  },
+  async (args, extra) => {
+    log.info("mcp_call search_tasks");
+    const res = await todoist_tool({ action: "search_tasks", args } as any);
     return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
   }
 );

@@ -7,6 +7,7 @@ This MCP server exposes Todoist operations to Claude Code for **your personal us
 - **edit_task** — edit content fields (title, description, due date) and/or move **parent tasks** between canonical sections.
 - **list_tasks_by_section** — list active tasks in the 3 default sections: **Current Sprint Backlog**, **In Progress**, **Ready for Testing**.
 - **get_task_details** — fetch a task’s title, description (Markdown), and subtasks (titles only).
+- **search_tasks** — search active tasks in the configured project by text.
 
 > Scope reductions for simplicity: one Todoist project, no labels/owners/recurrence/bulk ops/deletes; subtasks inherit parent section and cannot be moved directly; completed tasks are never listed.
 
@@ -97,12 +98,13 @@ claude mcp remove todoist
 ---
 
 ## Tool Definitions (MCP)
-Claude will see four tools with zod-validated inputs:
+Claude will see five tools with zod-validated inputs:
 
 - **create_task**: `{ title, description, section?, due_natural?, parent_task_id? }`
 - **edit_task**: `{ task_id, title?, description?, due_natural?, section? }` (section move is **parent-only**)
 - **list_tasks_by_section**: `{}` (always returns the default 3 sections)
 - **get_task_details**: `{ task_id }`
+- **search_tasks**: `{ query }`
 
 ---
 

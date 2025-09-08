@@ -16,12 +16,15 @@ export const CreateTaskInput = z.object({
   description: z.string().min(1),
   section: SectionName.optional(),      // parent only; default Backlog
   due_natural: z.string().optional(),   // dates only (natural language)
-  parent_task_id: z.string().optional() // if set -> subtask
+  parent_task_id: z.preprocess(
+    (val) => val === null ? undefined : val,
+    z.string().optional()
+  ) // if set -> subtask
 });
 
 export const TaskOut = z.object({
   task_id: z.string(),
-  parent_task_id: z.string().optional(),
+  parent_task_id: z.string().optional().nullable().transform(v => v === null ? undefined : v),
   title: z.string(),
   description: z.string(),
   section: SectionName,
@@ -38,8 +41,12 @@ export const EditTaskInput = z.object({
   task_id: z.string(),
   title: z.string().optional(),
   description: z.string().optional(),
-  due_natural: z.string().optional(),
-  section: SectionName.optional()
+  due_natural: z.string().optional()
+});
+
+export const MoveTaskInput = z.object({
+  task_id: z.string(),
+  section: SectionName
 });
 
 export const ListTasksBySectionInput = z.object({});
@@ -79,4 +86,37 @@ export const TaskDetailsOut = z.object({
   }).nullable(),
   subtasks: z.array(z.object({ task_id: z.string(), title: z.string() })),
   url: z.string()
+});
+
+// Search tasks
+export const SearchTasksInput = z.object({
+  query: z.string().min(1),
+  exact_title: z.boolean().optional()
+});
+
+export const SearchTasksOut = z.object({
+  project_id: z.string(),
+  query: z.string(),
+  results: z.array(z.object({
+    task_id: z.string(),
+    title: z.string(),
+    url: z.string(),
+    section: SectionName,
+    due: z.object({
+      date: z.string().optional(),
+      is_overdue: z.boolean(),
+      is_today: z.boolean(),
+      is_tomorrow: z.boolean()
+    }).nullable()
+  }))
+});
+
+export const DeleteTaskInput = z.object({
+  task_id: z.string()
+});
+
+export const DeleteTaskOut = z.object({
+  success: z.boolean(),
+  task_id: z.string(),
+  message: z.string()
 });

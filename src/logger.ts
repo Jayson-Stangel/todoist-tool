@@ -14,7 +14,7 @@ type Level = "debug" | "info" | "error";
 
 const LEVELS: Record<Level, number> = { debug: 10, info: 20, error: 30 };
 
-const LOG_FILE = process.env.LOG_FILE || "./todoist-mcp.log";
+const LOG_FILE = process.env.LOG_FILE || path.join(process.env.HOME || "~", "Repos/todoist-tool/logs/todoist-mcp.log");
 const LOG_LEVEL = (process.env.LOG_LEVEL as Level) || "info";
 
 function stamp(level: Level, msg: string) {
