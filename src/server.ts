@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { todoist_tool } from "./index.js";
 import { log } from "./logger.js";
-import { CreateTaskInput, EditTaskInput, MoveTaskInput, ListTasksBySectionInput, GetTaskDetailsInput, SearchTasksInput, DeleteTaskInput } from "./schemas.js";
+import { CreateTaskInput, EditTaskInput, MoveTaskInput, ListTasksBySectionInput, GetTaskDetailsInput, SearchTasksInput, DeleteTaskInput, GetSectionsInput } from "./schemas.js";
 
 const server = new McpServer({ name: "todoist-mcp", version: "0.1.0" });
 
@@ -100,6 +100,20 @@ server.registerTool(
   async (args, extra) => {
     log.info("mcp_call delete_task");
     const res = await todoist_tool({ action: "delete_task", args } as any);
+    return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
+  }
+);
+
+server.registerTool(
+  "get_sections",
+  {
+    title: "Get all sections in the project",
+    description: "List all sections in the configured project, including canonical and custom sections.",
+    inputSchema: GetSectionsInput.shape
+  },
+  async (args, extra) => {
+    log.info("mcp_call get_sections");
+    const res = await todoist_tool({ action: "get_sections", args } as any);
     return { content: [{ type: "text", text: JSON.stringify(res, null, 2) }] };
   }
 );

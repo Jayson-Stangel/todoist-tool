@@ -6,9 +6,10 @@ import {
   ListTasksBySectionInput, ListTasksBySectionOut,
   GetTaskDetailsInput, TaskDetailsOut,
   SearchTasksInput, SearchTasksOut,
-  DeleteTaskInput, DeleteTaskOut
+  DeleteTaskInput, DeleteTaskOut,
+  GetSectionsInput, GetSectionsOut
 } from "./schemas.js";
-import { createTask, editTask, moveTask, listTasksDefaultThree, getTaskDetails, searchTasks, deleteTask } from "./tasks.js";
+import { createTask, editTask, moveTask, listTasksDefaultThree, getTaskDetails, searchTasks, deleteTask, getSections } from "./tasks.js";
 import { MissingEnvError, ValidationError, NotFoundError, TodoistApiError, log } from "./logger.js";
 
 export type ToolInput =
@@ -18,7 +19,8 @@ export type ToolInput =
   | { action: "list_tasks_by_section"; args: z.infer<typeof ListTasksBySectionInput> }
   | { action: "get_task_details"; args: z.infer<typeof GetTaskDetailsInput> }
   | { action: "search_tasks"; args: z.infer<typeof SearchTasksInput> }
-  | { action: "delete_task"; args: z.infer<typeof DeleteTaskInput> };
+  | { action: "delete_task"; args: z.infer<typeof DeleteTaskInput> }
+  | { action: "get_sections"; args: z.infer<typeof GetSectionsInput> };
 
 export async function todoist_tool(input: ToolInput) {
   try {
@@ -57,6 +59,11 @@ export async function todoist_tool(input: ToolInput) {
         const parsed = DeleteTaskInput.parse(input.args);
         const out = await deleteTask(parsed.task_id);
         return { ok: true, action: input.action, data: DeleteTaskOut.parse(out) };
+      }
+      case "get_sections": {
+        GetSectionsInput.parse(input.args ?? {});
+        const out = await getSections();
+        return { ok: true, action: input.action, data: GetSectionsOut.parse(out) };
       }
       default: {
         const a = (input as any).action;

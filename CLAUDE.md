@@ -52,9 +52,13 @@ Every parent task must live in exactly one section. Subtasks inherit their paren
 ### MCP Tools Exposed
 
 1. **create_task** - Create parent tasks or subtasks with required description
-2. **edit_task** - Edit task fields and move parent tasks between sections  
-3. **list_tasks_by_section** - List active tasks in 3 default sections (Current Sprint Backlog, In Progress, Ready for Testing)
-4. **get_task_details** - Fetch task with description (Markdown) and subtasks
+2. **edit_task** - Edit task content fields (title, description, due date)
+3. **move_task** - Move parent tasks between canonical sections (uses Sync API)
+4. **list_tasks_by_section** - List active tasks in 3 default sections (Current Sprint Backlog, In Progress, Ready for Testing)
+5. **get_task_details** - Fetch task with description (Markdown) and subtasks
+6. **search_tasks** - Search active tasks by text query with optional exact title matching
+7. **delete_task** - Permanently delete tasks or subtasks by ID
+8. **get_sections** - List all sections in project (canonical and custom)
 
 ## Adding to Claude Code
 

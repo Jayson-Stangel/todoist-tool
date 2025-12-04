@@ -120,3 +120,14 @@ export const DeleteTaskOut = z.object({
   task_id: z.string(),
   message: z.string()
 });
+
+export const GetSectionsInput = z.object({});
+
+export const GetSectionsOut = z.object({
+  project_id: z.string(),
+  sections: z.array(z.object({
+    section_id: z.string(),
+    name: z.string(),
+    is_canonical: z.boolean()
+  }))
+});

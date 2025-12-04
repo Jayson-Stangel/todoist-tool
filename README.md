@@ -4,12 +4,15 @@ This MCP server exposes Todoist operations to Claude Code for **your personal us
 
 ## Capabilities
 - **create_task** — create parent tasks or subtasks (description required; optional `due_natural`).
-- **edit_task** — edit content fields (title, description, due date) and/or move **parent tasks** between canonical sections.
+- **edit_task** — edit content fields (title, description, due date) of a task.
+- **move_task** — move **parent tasks** between canonical sections.
 - **list_tasks_by_section** — list active tasks in the 3 default sections: **Current Sprint Backlog**, **In Progress**, **Ready for Testing**.
-- **get_task_details** — fetch a task’s title, description (Markdown), and subtasks (titles only).
+- **get_task_details** — fetch a task's title, description (Markdown), and subtasks (titles only).
 - **search_tasks** — search active tasks in the configured project by text.
+- **delete_task** — permanently delete a task or subtask by its ID.
+- **get_sections** — list all sections in the project (canonical and custom).
 
-> Scope reductions for simplicity: one Todoist project, no labels/owners/recurrence/bulk ops/deletes; subtasks inherit parent section and cannot be moved directly; completed tasks are never listed.
+> Scope reductions for simplicity: one Todoist project, no labels/owners/recurrence/bulk ops; subtasks inherit parent section and cannot be moved directly; completed tasks are never listed.
 
 ---
 
@@ -98,13 +101,16 @@ claude mcp remove todoist
 ---
 
 ## Tool Definitions (MCP)
-Claude will see five tools with zod-validated inputs:
+Claude will see eight tools with zod-validated inputs:
 
 - **create_task**: `{ title, description, section?, due_natural?, parent_task_id? }`
-- **edit_task**: `{ task_id, title?, description?, due_natural?, section? }` (section move is **parent-only**)
+- **edit_task**: `{ task_id, title?, description?, due_natural? }` (content editing only)
+- **move_task**: `{ task_id, section }` (section move is **parent-only**)
 - **list_tasks_by_section**: `{}` (always returns the default 3 sections)
 - **get_task_details**: `{ task_id }`
-- **search_tasks**: `{ query }`
+- **search_tasks**: `{ query, exact_title? }`
+- **delete_task**: `{ task_id }`
+- **get_sections**: `{}` (returns all sections with canonical status)
 
 ---
 

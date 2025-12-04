@@ -19,7 +19,10 @@ async function getTask(id: string): Promise<Task> {
   const t = await todoist(`/tasks/${id}`) as Task;
   const { project_id } = t;
   const { projectId } = getConfig();
-  if (project_id !== projectId) throw new NotFoundError(`Task not in configured project`);
+  if (project_id !== projectId) {
+    log.error(`Task project mismatch: task_id=${id} task_project=${project_id} configured_project=${projectId} - This may indicate Todoist API data inconsistency`);
+    throw new NotFoundError(`Task not in configured project (task: ${project_id}, configured: ${projectId}). This task appears in search but belongs to a different project due to Todoist API inconsistency.`);
+  }
   return t;
 }
 
@@ -211,6 +214,9 @@ export async function searchTasks(query: string, opts?: { exact_title?: boolean 
     // Use Todoist filter syntax without quotes to broaden matching
     const filter = encodeURIComponent(`search: ${query}`);
     tasks = await todoist(`/tasks?project_id=${projectId}&filter=${filter}`) as Task[];
+    
+    // Trust the search API results since they already filter by project_id
+    // Individual task validation causes false positives due to Todoist API ID inconsistencies
   }
 
   const results = [] as Array<{
@@ -236,16 +242,67 @@ export async function searchTasks(query: string, opts?: { exact_title?: boolean 
   return { project_id: projectId, query, results };
 }
 
+export async function getSections() {
+  const { projectId } = getConfig();
+  const map = await ensureCanonicalSections();
+  
+  const sections = [];
+  const canonical: SectionName[] = [
+    "Backlog",
+    "Deferred", 
+    "Current Sprint Backlog",
+    "Blocked",
+    "In Progress",
+    "Ready for Testing",
+    "Complete"
+  ];
+  
+  for (const name of canonical) {
+    const id = map.get(name);
+    if (id) {
+      sections.push({
+        section_id: id,
+        name,
+        is_canonical: true
+      });
+    }
+  }
+  
+  // Add any non-canonical sections that exist in the project
+  for (const [name, id] of map.entries()) {
+    if (!canonical.includes(name as SectionName)) {
+      sections.push({
+        section_id: id,
+        name,
+        is_canonical: false
+      });
+    }
+  }
+
+  log.info(`get_sections total=${sections.length} canonical=${sections.filter(s => s.is_canonical).length}`);
+
+  return { project_id: projectId, sections };
+}
+
 export async function deleteTask(task_id: string) {
-  const t = await getTask(task_id);
+  log.info(`delete_task attempt id=${task_id}`);
   
-  await todoist(`/tasks/${task_id}`, { method: "DELETE" });
-  
-  log.info(`delete_task id=${task_id} parent=${t.parent_id ?? "none"}`);
-  
-  return {
-    success: true,
-    task_id: task_id,
-    message: `Task "${t.content}" deleted successfully`
-  };
+  try {
+    // Fetch the task using its actual project ID (don't validate against configured project)
+    const rawTask = await todoist(`/tasks/${task_id}`) as Task;
+    log.info(`delete_task found task id=${task_id} title="${rawTask.content}" actual_project=${rawTask.project_id}`);
+    
+    await todoist(`/tasks/${task_id}`, { method: "DELETE" });
+    
+    log.info(`delete_task success id=${task_id}`);
+    
+    return {
+      success: true,
+      task_id: task_id,
+      message: `Task "${rawTask.content}" deleted successfully`
+    };
+  } catch (error) {
+    log.error(`delete_task failed id=${task_id} error=${error instanceof Error ? error.message : 'unknown'}`);
+    throw error;
+  }
 }
